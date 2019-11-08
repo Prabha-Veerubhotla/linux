@@ -64,6 +64,8 @@
 MODULE_AUTHOR("Qumranet");
 MODULE_LICENSE("GPL");
 
+extern atomic_t totalNumOfExits;
+//EXPORT_SYMBOL(totalNumOfExits);
 static const struct x86_cpu_id vmx_cpu_id[] = {
 	X86_FEATURE_MATCH(X86_FEATURE_VMX),
 	{}
@@ -5860,6 +5862,8 @@ void dump_vmcs(void)
  */
 static int vmx_handle_exit(struct kvm_vcpu *vcpu)
 {
+	atomic_inc(&totalNumOfExits);
+	printk("number of vm exits: %d", atomic_read(&totalNumOfExits));
 	struct vcpu_vmx *vmx = to_vmx(vcpu);
 	u32 exit_reason = vmx->exit_reason;
 	u32 vectoring_info = vmx->idt_vectoring_info;

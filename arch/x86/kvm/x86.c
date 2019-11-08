@@ -77,7 +77,6 @@
 #define KVM_MAX_MCE_BANKS 32
 u64 __read_mostly kvm_mce_cap_supported = MCG_CTL_P | MCG_SER_P;
 EXPORT_SYMBOL_GPL(kvm_mce_cap_supported);
-
 #define emul_to_vcpu(ctxt) \
 	container_of(ctxt, struct kvm_vcpu, arch.emulate_ctxt)
 
@@ -8226,6 +8225,7 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
 		kvm_lapic_sync_from_vapic(vcpu);
 
 	vcpu->arch.gpa_available = false;
+	//atomic_inc(&totalNumOfExits);
 	r = kvm_x86_ops->handle_exit(vcpu);
 	return r;
 
