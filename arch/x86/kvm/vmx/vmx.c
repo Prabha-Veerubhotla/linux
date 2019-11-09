@@ -66,6 +66,9 @@ MODULE_LICENSE("GPL");
 
 extern atomic_t totalNumOfExits;
 //EXPORT_SYMBOL(totalNumOfExits);
+
+extern atomic64_t totalTimeSpentInAllExits;
+
 static const struct x86_cpu_id vmx_cpu_id[] = {
 	X86_FEATURE_MATCH(X86_FEATURE_VMX),
 	{}
@@ -5861,7 +5864,7 @@ void dump_vmcs(void)
  * assistance.
  */
 static int vmx_handle_exit(struct kvm_vcpu *vcpu)
-{
+{       u64 startTimeHandlExit = rdtsc();
 	atomic_inc(&totalNumOfExits);
 	printk("number of vm exits: %d", atomic_read(&totalNumOfExits));
 	struct vcpu_vmx *vmx = to_vmx(vcpu);
@@ -5949,9 +5952,13 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
 	}
 
 	if (exit_reason < kvm_vmx_max_exit_handlers
-	    && kvm_vmx_exit_handlers[exit_reason])
-		return kvm_vmx_exit_handlers[exit_reason](vcpu);
-	else {
+	    && kvm_vmx_exit_handlers[exit_reason]) {
+	       int result = kvm_vmx_exit_handlers[exit_reason](vcpu);
+	u64 endTimeHandleExit = rdtsc();
+        u64 duration = endTimeHandleExit - startTimeHandlExit;
+        atomic64_add(duration, &totalTimeSpentInAllExits);
+	return result;
+	} else {
 		vcpu_unimpl(vcpu, "vmx: unexpected exit reason 0x%x\n",
 				exit_reason);
 		dump_vmcs();
@@ -5962,6 +5969,7 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
 		vcpu->run->internal.data[0] = exit_reason;
 		return 0;
 	}
+
 }
 
 /*

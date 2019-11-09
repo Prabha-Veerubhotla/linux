@@ -27,6 +27,10 @@
 
 atomic_t totalNumOfExits;
 EXPORT_SYMBOL(totalNumOfExits);
+
+atomic64_t totalTimeSpentInAllExits;
+EXPORT_SYMBOL(totalTimeSpentInAllExits);
+
 static u32 xstate_required_size(u64 xstate_bv, bool compacted)
 {
 	int feature_bit = 0;
@@ -1051,6 +1055,12 @@ int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
 	ecx = kvm_rcx_read(vcpu);
 	if(eax == 0x4FFFFFFF) {
           eax=atomic_read(&totalNumOfExits);          
+	} else if(eax == 0x4FFFFFFE) {
+		u64 totalTime = atomic64_read(&totalTimeSpentInAllExits);
+		// low 32 bits
+		ecx = (u32)(totalTime & 0x00000000FFFFFFFF);
+		// high 32 bites
+	        ebx =  (u32)(totalTime & 0xFFFFFFFF00000000);
 	} else {		
 	  kvm_cpuid(vcpu, &eax, &ebx, &ecx, &edx, true);
 	}
