@@ -5866,7 +5866,7 @@ void dump_vmcs(void)
 static int vmx_handle_exit(struct kvm_vcpu *vcpu)
 {       u64 startTimeHandlExit = rdtsc();
 	atomic_inc(&totalNumOfExits);
-	printk("number of vm exits: %d", atomic_read(&totalNumOfExits));
+	printk(KERN_INFO "number of vm exits: %d", atomic_read(&totalNumOfExits));
 	struct vcpu_vmx *vmx = to_vmx(vcpu);
 	u32 exit_reason = vmx->exit_reason;
 	u32 vectoring_info = vmx->idt_vectoring_info;
@@ -5957,6 +5957,8 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
 	u64 endTimeHandleExit = rdtsc();
         u64 duration = endTimeHandleExit - startTimeHandlExit;
         atomic64_add(duration, &totalTimeSpentInAllExits);
+	printk(KERN_INFO "time spent in exits: %llu", atomic64_read(&totalTimeSpentInAllExits));
+
 	return result;
 	} else {
 		vcpu_unimpl(vcpu, "vmx: unexpected exit reason 0x%x\n",
