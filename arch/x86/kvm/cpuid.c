@@ -1046,6 +1046,7 @@ EXPORT_SYMBOL_GPL(kvm_cpuid);
 
 int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
 {
+	u64 totalTime = 0x0;
 	u32 eax, ebx, ecx, edx;
 
 	if (cpuid_fault_enabled(vcpu) && !kvm_require_cpl(vcpu, 0))
@@ -1056,7 +1057,7 @@ int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
 	if(eax == 0x4FFFFFFF) {
           eax=atomic_read(&totalNumOfExits);          
 	} else if(eax == 0x4FFFFFFE) {
-		u64 totalTime = atomic64_read(&totalTimeSpentInAllExits);
+		totalTime = atomic64_read(&totalTimeSpentInAllExits);
 		// low 32 bits
 		ecx = totalTime & 0x00000000FFFFFFFF;
 		// high 32 bits
