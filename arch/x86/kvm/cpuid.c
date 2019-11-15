@@ -25,11 +25,13 @@
 #include "pmu.h"
 
 
+
 atomic_t totalNumOfExits;
 EXPORT_SYMBOL(totalNumOfExits);
 
 atomic64_t totalTimeSpentInAllExits;
 EXPORT_SYMBOL(totalTimeSpentInAllExits);
+
 
 static u32 xstate_required_size(u64 xstate_bv, bool compacted)
 {
@@ -1046,7 +1048,7 @@ EXPORT_SYMBOL_GPL(kvm_cpuid);
 
 int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
 {
-	u64 totalTime = 0x0;
+	//u64 totalTime = 0x0;
 	u32 eax, ebx, ecx, edx;
 
 	if (cpuid_fault_enabled(vcpu) && !kvm_require_cpl(vcpu, 0))
@@ -1055,20 +1057,27 @@ int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
 	eax = kvm_rax_read(vcpu);
 	ecx = kvm_rcx_read(vcpu);
 	if(eax == 0x4FFFFFFF) {
+
           eax=atomic_read(&totalNumOfExits);          
-	} else if(eax == 0x4FFFFFFE) {
-		totalTime = atomic64_read(&totalTimeSpentInAllExits);
-		// low 32 bits
-		ecx = totalTime & 0x00000000FFFFFFFF;
+	} else
+       if(eax == 0x4FFFFFFE) {
+
+		u64 totalTime = atomic64_read(&totalTimeSpentInAllExits);
 		// high 32 bits
-	        ebx = (totalTime & 0xFFFFFFFF00000000) >> 32;
+                ebx = (totalTime >> 32) & 0xffffffff;
+
+		ecx = totalTime & 0xffffffff;
+		// high 32 bits
+	        
 	} else {		
 	  kvm_cpuid(vcpu, &eax, &ebx, &ecx, &edx, true);
+	
 	}
 	kvm_rax_write(vcpu, eax);
 	kvm_rbx_write(vcpu, ebx);
 	kvm_rcx_write(vcpu, ecx);
 	kvm_rdx_write(vcpu, edx);
+
 	if(eax == 0x4FFFFFFF) {
           printk("CPUID(0x4FFFFFFF), exits = %d", atomic_read(&totalNumOfExits));
 	}
