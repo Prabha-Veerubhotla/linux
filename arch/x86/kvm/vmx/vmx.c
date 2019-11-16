@@ -5859,15 +5859,24 @@ void dump_vmcs(void)
 }
 
 /*
+ * exit time calculation  
+ */
+static void exit_time(u64 startTimeHandleExit)
+{
+		u64 endTimeHandleExit = rdtsc();
+        	u64 duration = endTimeHandleExit - startTimeHandleExit;
+        	atomic64_add(duration, &totalTimeSpentInAllExits);
+}
+/*
  * The guest has exited.  See if we can fix it or if we need userspace
  * assistance.
  */
 static int vmx_handle_exit(struct kvm_vcpu *vcpu)
 
 {       
-         u64 startTimeHandlExit = rdtsc();
+         u64 startTimeHandleExit = rdtsc();
 	atomic_inc(&totalNumOfExits);
-	//printk(KERN_INFO "number of vm exits: %d", atomic_read(&totalNumOfExits));
+	printk(KERN_INFO "number of vm exits: %d", atomic_read(&totalNumOfExits));
 	struct vcpu_vmx *vmx = to_vmx(vcpu);
 	u32 exit_reason = vmx->exit_reason;
 	u32 vectoring_info = vmx->idt_vectoring_info;
@@ -5886,16 +5895,26 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
 
 	/* If guest state is invalid, start emulating */
 	if (vmx->emulation_required)
-		return handle_invalid_guest_state(vcpu);
+	{
+		
+		int result = handle_invalid_guest_state(vcpu);
+		exit_time(startTimeHandleExit);
+		return result;
+	}
 
-	if (is_guest_mode(vcpu) && nested_vmx_exit_reflected(vcpu, exit_reason))
-		return nested_vmx_reflect_vmexit(vcpu, exit_reason);
+	if (is_guest_mode(vcpu) && nested_vmx_exit_reflected(vcpu, exit_reason)){
+		int result = nested_vmx_reflect_vmexit(vcpu, exit_reason);
+		exit_time(startTimeHandleExit);
+		return result;
+
+          }
 
 	if (exit_reason & VMX_EXIT_REASONS_FAILED_VMENTRY) {
 		dump_vmcs();
 		vcpu->run->exit_reason = KVM_EXIT_FAIL_ENTRY;
 		vcpu->run->fail_entry.hardware_entry_failure_reason
 			= exit_reason;
+		exit_time(startTimeHandleExit);
 		return 0;
 	}
 
@@ -5904,6 +5923,7 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
 		vcpu->run->exit_reason = KVM_EXIT_FAIL_ENTRY;
 		vcpu->run->fail_entry.hardware_entry_failure_reason
 			= vmcs_read32(VM_INSTRUCTION_ERROR);
+		exit_time(startTimeHandleExit);
 		return 0;
 	}
 
@@ -5930,6 +5950,7 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
 			vcpu->run->internal.data[3] =
 				vmcs_read64(GUEST_PHYSICAL_ADDRESS);
 		}
+		exit_time(startTimeHandleExit);
 		return 0;
 	}
 
@@ -5955,10 +5976,8 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
 	if (exit_reason < kvm_vmx_max_exit_handlers
 	    && kvm_vmx_exit_handlers[exit_reason]) {
 	       int result = kvm_vmx_exit_handlers[exit_reason](vcpu);
-	u64 endTimeHandleExit = rdtsc();
-        u64 duration = endTimeHandleExit - startTimeHandlExit;
-        atomic64_add(duration, &totalTimeSpentInAllExits);
-	printk(KERN_INFO "time spent in exits: %llu", atomic64_read(&totalTimeSpentInAllExits));
+	exit_time(startTimeHandleExit);
+	//printk(KERN_INFO "time spent in exits: %llu", atomic64_read(&totalTimeSpentInAllExits));
 
 	return result;
 	} else {
@@ -5970,6 +5989,7 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
 			KVM_INTERNAL_ERROR_UNEXPECTED_EXIT_REASON;
 		vcpu->run->internal.ndata = 1;
 		vcpu->run->internal.data[0] = exit_reason;
+		exit_time(startTimeHandleExit);
 		return 0;
 	}
 

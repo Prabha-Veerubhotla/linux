@@ -1065,9 +1065,9 @@ int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
 		u64 totalTime = atomic64_read(&totalTimeSpentInAllExits);
 		// high 32 bits
                 ebx = (totalTime >> 32) & 0xffffffff;
-
+		// low 32 bits
 		ecx = totalTime & 0xffffffff;
-		// high 32 bits
+		
 	        
 	} else {		
 	  kvm_cpuid(vcpu, &eax, &ebx, &ecx, &edx, true);
