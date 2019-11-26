@@ -1069,7 +1069,39 @@ int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
 		ecx = totalTime & 0xffffffff;
 		
 	        
-	} else {		
+	} else if(eax == 0x4FFFFFFD || eax == 0x4FFFFFFC) {
+           // exits not defined in the SDM
+           if(ecx < 0 || ecx > 64 || ecx == 35 || ecx == 38 || ecx == 42) {
+
+           eax = 0;
+	   ebx = 0;
+	   ecx = 0;
+	   edx = 0x4FFFFFFF;
+	   } else if( ecx >=0 && ecx <=64 ) {
+            // rdrand (57) , rdseed(61) 
+	    // exits not enabled in kvm
+	   if(ecx == 57 || ecx == 61) {
+             eax = 0;
+	     ebx = 0;
+	     ecx = 0;
+	     edx = 0;
+	    } 
+	    // for the remaining
+	    // exits defined in sdm & enabled in kvm
+	    else {
+            
+            if(ecx == 0x4FFFFFFD) {
+            // to do
+	    // return exits for exit reason (ecx)
+	    } else {
+	    // to do
+	    // return exit time in ebx (high 32 bits), ecx(low 32 bits) 
+	    }
+
+	    }
+         }
+	    
+        } else {		
 	  kvm_cpuid(vcpu, &eax, &ebx, &ecx, &edx, true);
 	
 	}
