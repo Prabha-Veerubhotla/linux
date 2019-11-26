@@ -33,8 +33,8 @@ atomic64_t totalTimeSpentInAllExits;
 EXPORT_SYMBOL(totalTimeSpentInAllExits);
 
 // exit reasons 0-64 in SDM
-uint64_t exitCountForExitReason[65];
-EXPORT_SYMBOL(exitCountForExitReason[65]);
+atomic_t exitCountForExitReason[65] = ATOMIC_INIT(0);
+EXPORT_SYMBOL(exitCountForExitReason);
 
 static u32 xstate_required_size(u64 xstate_bv, bool compacted)
 {
@@ -1096,7 +1096,7 @@ int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
             if(ecx == 0x4FFFFFFD) {
             
 	    // return exits for exit reason (ecx)
-	    eax =  exitCountForExitReason[ecx];
+	    eax = atomic_read(&exitCountForExitReason[ecx]);
 	    } else {
 	    // to do
 	    // return exit time in ebx (high 32 bits), ecx(low 32 bits) 
