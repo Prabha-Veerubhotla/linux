@@ -67,7 +67,7 @@ MODULE_LICENSE("GPL");
 extern atomic_t totalNumOfExits;
 extern atomic64_t totalTimeSpentInAllExits;
 
-extern atomic_t exitCountForExitReason[65];
+extern atomic_t exitCountForExitReason[69];
 
 static const struct x86_cpu_id vmx_cpu_id[] = {
 	X86_FEATURE_MATCH(X86_FEATURE_VMX),
@@ -5880,7 +5880,7 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
 	printk(KERN_INFO "number of vm exits: %d", atomic_read(&totalNumOfExits));
 	struct vcpu_vmx *vmx = to_vmx(vcpu);
 	u32 exit_reason = vmx->exit_reason;
-	atomic_inc(&exitCountForExitReason[exit_reason]);
+	
 	//atomic_add(atomic_read(&exitCountForExitReason[exit_reason]) +1 , &exitCountForExitReason[exit_reason]);
 //	exitCountForExitReason[ uint64_t(exit_reason)] = exitCountForExitReason[ uint64_t(exit_reason)] + 1;
 	u32 vectoring_info = vmx->idt_vectoring_info;
@@ -5908,12 +5908,18 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
 
 	if (is_guest_mode(vcpu) && nested_vmx_exit_reflected(vcpu, exit_reason)){
 		int result = nested_vmx_reflect_vmexit(vcpu, exit_reason);
+		atomic_inc(&exitCountForExitReason[exit_reason]);
 		exit_time(startTimeHandleExit);
 		return result;
 
           }
+		else{
+			u32 temp = -1;
+			atomic_add(temp, &exitCountForExitReason[exit_reason]);
+		}
 
 	if (exit_reason & VMX_EXIT_REASONS_FAILED_VMENTRY) {
+
 		dump_vmcs();
 		vcpu->run->exit_reason = KVM_EXIT_FAIL_ENTRY;
 		vcpu->run->fail_entry.hardware_entry_failure_reason

@@ -33,7 +33,7 @@ atomic64_t totalTimeSpentInAllExits;
 EXPORT_SYMBOL(totalTimeSpentInAllExits);
 
 // exit reasons 0-64 in SDM
-atomic_t exitCountForExitReason[65] = ATOMIC_INIT(0);
+atomic_t exitCountForExitReason[69] = ATOMIC_INIT(0);
 EXPORT_SYMBOL(exitCountForExitReason);
 
 static u32 xstate_required_size(u64 xstate_bv, bool compacted)
@@ -1074,16 +1074,17 @@ int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
 	        
 	} else if(eax == 0x4FFFFFFD || eax == 0x4FFFFFFC) {
            // exits not defined in the SDM
-           if(ecx < 0 || ecx > 64 || ecx == 35 || ecx == 38 || ecx == 42) {
+	    u32 temp = atomic_read(&exitCountForExitReason[ecx]);
+           if(ecx < 0 || ecx > 68 || ecx == 35 || ecx == 38 || ecx == 42) {
 
            eax = 0;
 	   ebx = 0;
 	   ecx = 0;
 	   edx = 0x4FFFFFFF;
-	   } else if( ecx >=0 && ecx <=64 ) {
+	   } else if( ecx >=0 && ecx <=68 ) {
             // rdrand (57) , rdseed(61) 
 	    // exits not enabled in kvm
-	   if(ecx == 57 || ecx == 61) {
+	   if(temp < 0) {
              eax = 0;
 	     ebx = 0;
 	     ecx = 0;
@@ -1097,7 +1098,7 @@ int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
             
 	    // return exits for exit reason (ecx)
 	    eax = atomic_read(&exitCountForExitReason[ecx]);
-        printk("CPUID(0x4FFFFFFD), exits = %d", atomic_read(&exitCountForExitReason[ecx]));
+        printk("CPUID(0x4FFFFFFD), exits = %d",   atomic_read(&exitCountForExitReason[ecx]));
 	    } else {
 	    // to do
 	    // return exit time in ebx (high 32 bits), ecx(low 32 bits) 
