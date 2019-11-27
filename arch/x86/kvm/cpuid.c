@@ -1093,7 +1093,7 @@ int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
 	    // exits defined in sdm & enabled in kvm
 	    else {
             
-            if(ecx == 0x4FFFFFFD) {
+            if(eax == 0x4FFFFFFD) {
             
 	    // return exits for exit reason (ecx)
 	    eax = atomic_read(&exitCountForExitReason[ecx]);
