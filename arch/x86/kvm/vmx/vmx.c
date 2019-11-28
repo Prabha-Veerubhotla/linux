@@ -5984,13 +5984,14 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
 	       int result = kvm_vmx_exit_handlers[exit_reason](vcpu);
 	exit_time(startTimeHandleExit);
 	atomic_inc(&exitCountForExitReason[exit_reason]);
+	printk(KERN_INFO "exit reason: %d", exit_reason);
 	//printk(KERN_INFO "time spent in exits: %llu", atomic64_read(&totalTimeSpentInAllExits));
 
 	return result;
 	} else {
 		
-		u32 temp = -1;
-		atomic_add(temp, &exitCountForExitReason[exit_reason]);
+	//	u32 temp = -1;
+	//	atomic_add(temp, &exitCountForExitReason[exit_reason]);
 		
 		vcpu_unimpl(vcpu, "vmx: unexpected exit reason 0x%x\n",
 				exit_reason);
