@@ -5908,7 +5908,6 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
 
 	if (is_guest_mode(vcpu) && nested_vmx_exit_reflected(vcpu, exit_reason)){
 		int result = nested_vmx_reflect_vmexit(vcpu, exit_reason);
-		atomic_inc(&exitCountForExitReason[exit_reason]);
 		exit_time(startTimeHandleExit);
 		return result;
 
@@ -5984,6 +5983,7 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
 	    && kvm_vmx_exit_handlers[exit_reason]) {
 	       int result = kvm_vmx_exit_handlers[exit_reason](vcpu);
 	exit_time(startTimeHandleExit);
+	atomic_inc(&exitCountForExitReason[exit_reason]);
 	//printk(KERN_INFO "time spent in exits: %llu", atomic64_read(&totalTimeSpentInAllExits));
 
 	return result;
