@@ -5913,10 +5913,7 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
 		return result;
 
           }
-		else{
-			u32 temp = -1;
-			atomic_add(temp, &exitCountForExitReason[exit_reason]);
-		}
+		
 
 	if (exit_reason & VMX_EXIT_REASONS_FAILED_VMENTRY) {
 
@@ -5991,6 +5988,10 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
 
 	return result;
 	} else {
+		
+		u32 temp = -1;
+		atomic_add(temp, &exitCountForExitReason[exit_reason]);
+		
 		vcpu_unimpl(vcpu, "vmx: unexpected exit reason 0x%x\n",
 				exit_reason);
 		dump_vmcs();
