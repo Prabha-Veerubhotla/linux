@@ -1075,7 +1075,7 @@ int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
 	} else if(eax == 0x4FFFFFFD || eax == 0x4FFFFFFC) {
            // exits not defined in the SDM
 	    u32 temp = atomic_read(&exitCountForExitReason[ecx]);
-           if(ecx < 0 || ecx > 68 || ecx == 35 || ecx == 38 || ecx == 42) {
+           if(ecx < 0 || ecx > 68 || ecx == 35 || ecx == 38 || ecx == 42 || ecx == 65) {
 
            eax = 0;
 	   ebx = 0;
