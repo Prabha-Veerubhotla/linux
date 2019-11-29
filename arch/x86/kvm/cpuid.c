@@ -36,6 +36,9 @@ EXPORT_SYMBOL(totalTimeSpentInAllExits);
 atomic_t exitCountForExitReason[69] = ATOMIC_INIT(0);
 EXPORT_SYMBOL(exitCountForExitReason);
 
+atomic64_t timeSpentForExitReason[69] = ATOMIC_INIT(0);
+EXPORT_SYMBOL(timeSpentForExitReason);
+
 static u32 xstate_required_size(u64 xstate_bv, bool compacted)
 {
 	int feature_bit = 0;
@@ -1097,9 +1100,15 @@ int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
             
 	    // return exits for exit reason (ecx)
 	    eax = atomic_read(&exitCountForExitReason[ecx]);
-        printk("CPUID(0x4FFFFFFD), exits = %d",     atomic_read(&exitCountForExitReason[ecx]));
+        printk(KERN_INFO "CPUID(0x4FFFFFFD), exits = %d",     atomic_read(&exitCountForExitReason[ecx]));
 	    } else {
-	    // to do
+	    u64 timeSpent = atomic64_read(&timeSpentForExitReason[ecx]);
+	    //high 32 bits
+	    ebx = (timeSpent >> 32) & 0xFFFFFFFF;
+            //low 32 bits
+            ecx = timeSpent & 0xFFFFFFFF;
+	    printk(KERN_INFO "CPUID(0x4FFFFFFC), exit time = %llu",     atomic64_read(&timeSpentForExitReason[ecx]));
+
 	    // return exit time in ebx (high 32 bits), ecx(low 32 bits) 
 	    }
 

@@ -68,6 +68,7 @@ extern atomic_t totalNumOfExits;
 extern atomic64_t totalTimeSpentInAllExits;
 
 extern atomic_t exitCountForExitReason[69];
+extern atomic64_t timeSpentForExitReason[69];
 
 static const struct x86_cpu_id vmx_cpu_id[] = {
 	X86_FEATURE_MATCH(X86_FEATURE_VMX),
@@ -5875,7 +5876,7 @@ static void exit_time(u64 startTimeHandleExit)
 static int vmx_handle_exit(struct kvm_vcpu *vcpu)
 
 {       
-         u64 startTimeHandleExit = rdtsc();
+        u64 startTimeHandleExit = rdtsc();
 	atomic_inc(&totalNumOfExits);
 	printk(KERN_INFO "number of vm exits: %d", atomic_read(&totalNumOfExits));
 	struct vcpu_vmx *vmx = to_vmx(vcpu);
@@ -5983,9 +5984,12 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
 	    && kvm_vmx_exit_handlers[exit_reason]) {
 	       int result = kvm_vmx_exit_handlers[exit_reason](vcpu);
 	exit_time(startTimeHandleExit);
+	u64 endTimeForAnExit  = rdtsc();
+	u64 timeSpentForExit = endTimeForAnExit - startTimeHandleExit;
+	atomic64_add(timeSpentForExit, &timeSpentForExitReason[exit_reason]); 
 	atomic_inc(&exitCountForExitReason[exit_reason]);
 	printk(KERN_INFO "exit reason: %d", exit_reason);
-	//printk(KERN_INFO "time spent in exits: %llu", atomic64_read(&totalTimeSpentInAllExits));
+	printk(KERN_INFO "time spent in exit: %d  is %llu", exit_reason, atomic64_read(&timeSpentForExitReason[exit_reason]));
 
 	return result;
 	} else {
