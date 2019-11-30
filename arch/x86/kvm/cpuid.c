@@ -1086,7 +1086,7 @@ int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
 	   } else if( ecx >=0 && ecx <=68 ) {
             // 3(init signal), 4 (start up ipi), 5 (i/o system management interrupt), 6 (other smi), 11 (GETSEC),16 (rdtsc), 17 (rsm) , 33 (invalid state), 3 4 (msr load fail) , 45 (eoi induced) , 51 (rdtscp), 66 (spp related event)
 	    // exits not enabled in kvm
-	   if(ecx == 3 || ecx == 4 || ecx == 5 || ecx == 6 || ecx == 11 || ecx == 16 || ecx == 17 || ecx == 33 || ecx == 34 || ecx == 45 || ecx == 51 || ecx == 66 ) {
+	   if(ecx == 3 || ecx == 4 || ecx == 5 || ecx == 6 || ecx == 11 || ecx == 16 || ecx == 17 || ecx == 33 || ecx == 34 || ecx == 51 || ecx == 66 ) {
              eax = 0;
 	     ebx = 0;
 	     ecx = 0;
