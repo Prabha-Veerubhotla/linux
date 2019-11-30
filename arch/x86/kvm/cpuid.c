@@ -1101,7 +1101,8 @@ int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
 	    // return exits for exit reason (ecx)
 	    eax = atomic_read(&exitCountForExitReason[ecx]);
         printk(KERN_INFO "CPUID(0x4FFFFFFD), exits = %d",     atomic_read(&exitCountForExitReason[ecx]));
-	    } else {
+	    } 
+	   if(eax == 0x4FFFFFFC) {
 	    u64 timeSpent = atomic64_read(&timeSpentForExitReason[ecx]);
 	    //high 32 bits
 	    ebx = (timeSpent >> 32) & 0xFFFFFFFF;
