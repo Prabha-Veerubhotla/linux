@@ -67,6 +67,8 @@ MODULE_LICENSE("GPL");
 extern atomic_t totalNumOfExits;
 extern atomic64_t totalTimeSpentInAllExits;
 
+extern atomic_t exitCountForExitReason[69];
+extern atomic64_t timeSpentForExitReason[69];
 
 static const struct x86_cpu_id vmx_cpu_id[] = {
 	X86_FEATURE_MATCH(X86_FEATURE_VMX),
@@ -5874,11 +5876,14 @@ static void exit_time(u64 startTimeHandleExit)
 static int vmx_handle_exit(struct kvm_vcpu *vcpu)
 
 {       
-         u64 startTimeHandleExit = rdtsc();
+        u64 startTimeHandleExit = rdtsc();
 	atomic_inc(&totalNumOfExits);
 	printk(KERN_INFO "number of vm exits: %d", atomic_read(&totalNumOfExits));
 	struct vcpu_vmx *vmx = to_vmx(vcpu);
 	u32 exit_reason = vmx->exit_reason;
+	
+	//atomic_add(atomic_read(&exitCountForExitReason[exit_reason]) +1 , &exitCountForExitReason[exit_reason]);
+//	exitCountForExitReason[ uint64_t(exit_reason)] = exitCountForExitReason[ uint64_t(exit_reason)] + 1;
 	u32 vectoring_info = vmx->idt_vectoring_info;
 
 	trace_kvm_exit(exit_reason, vcpu, KVM_ISA_VMX);
@@ -5908,8 +5913,10 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
 		return result;
 
           }
+		
 
 	if (exit_reason & VMX_EXIT_REASONS_FAILED_VMENTRY) {
+
 		dump_vmcs();
 		vcpu->run->exit_reason = KVM_EXIT_FAIL_ENTRY;
 		vcpu->run->fail_entry.hardware_entry_failure_reason
@@ -5977,10 +5984,19 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
 	    && kvm_vmx_exit_handlers[exit_reason]) {
 	       int result = kvm_vmx_exit_handlers[exit_reason](vcpu);
 	exit_time(startTimeHandleExit);
-	//printk(KERN_INFO "time spent in exits: %llu", atomic64_read(&totalTimeSpentInAllExits));
+	u64 endTimeForAnExit  = rdtsc();
+	u64 timeSpentForExit = endTimeForAnExit - startTimeHandleExit;
+	atomic64_add(timeSpentForExit, &timeSpentForExitReason[exit_reason]); 
+	atomic_inc(&exitCountForExitReason[exit_reason]);
+	printk(KERN_INFO "exit reason: %d", exit_reason);
+	printk(KERN_INFO "time spent in exit: %d  is %llu", exit_reason, atomic64_read(&timeSpentForExitReason[exit_reason]));
 
 	return result;
 	} else {
+		
+	//	u32 temp = -1;
+	//	atomic_add(temp, &exitCountForExitReason[exit_reason]);
+		
 		vcpu_unimpl(vcpu, "vmx: unexpected exit reason 0x%x\n",
 				exit_reason);
 		dump_vmcs();

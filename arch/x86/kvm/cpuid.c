@@ -32,6 +32,12 @@ EXPORT_SYMBOL(totalNumOfExits);
 atomic64_t totalTimeSpentInAllExits;
 EXPORT_SYMBOL(totalTimeSpentInAllExits);
 
+// exit reasons 0-68 in new SDM
+atomic_t exitCountForExitReason[69] = ATOMIC_INIT(0);
+EXPORT_SYMBOL(exitCountForExitReason);
+
+atomic64_t timeSpentForExitReason[69] = ATOMIC_INIT(0);
+EXPORT_SYMBOL(timeSpentForExitReason);
 
 static u32 xstate_required_size(u64 xstate_bv, bool compacted)
 {
@@ -1069,7 +1075,50 @@ int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
 		ecx = totalTime & 0xffffffff;
 		
 	        
-	} else {		
+	} else if(eax == 0x4FFFFFFD || eax == 0x4FFFFFFC) {
+           // exits not defined in the SDM
+	 //   u32 temp = atomic_read(&exitCountForExitReason[ecx]);
+           if(ecx < 0 || ecx > 68 || ecx == 35 || ecx == 38 || ecx == 42||ecx == 65) {
+           eax = 0;
+	   ebx = 0;
+	   ecx = 0;
+	   edx = 0xFFFFFFFF;
+	   } else if( ecx >=0 && ecx <=68 ) {
+            // 3(init signal), 4 (start up ipi), 5 (i/o system management interrupt), 6 (other smi), 11 (GETSEC),16 (rdtsc), 17 (rsm) , 33 (invalid state), 3 4 (msr load fail) , 45 (eoi induced) , 51 (rdtscp), 66 (spp related event)
+	    // exits not enabled in kvm
+	   if(ecx == 3 || ecx == 4 || ecx == 5 || ecx == 6 || ecx == 11 || ecx == 16 || ecx == 17 || ecx == 33 || ecx == 34 || ecx == 51 || ecx == 66 ) {
+             eax = 0;
+	     ebx = 0;
+	     ecx = 0;
+	     edx = 0;
+	    } 
+	    // for the remaining
+	    // exits defined in sdm & enabled in kvm
+	    else {
+            
+            if(eax == 0x4FFFFFFD) {
+            
+	    // return exits for exit reason (ecx)
+	    eax = atomic_read(&exitCountForExitReason[ecx]);
+        printk(KERN_INFO "CPUID(0x4FFFFFFD), exits = %d",     atomic_read(&exitCountForExitReason[ecx]));
+	    } 
+	   else if(eax == 0x4FFFFFFC) {
+		   printk(KERN_INFO "eax= 0x4ffffffc ecx = %d", ecx);
+		   printk(KERN_INFO "CPUID(0x4FFFFFFC), exit time = %llu",     atomic64_read(&timeSpentForExitReason[ecx]));
+
+	    u64 timeSpent = atomic64_read(&timeSpentForExitReason[ecx]);
+	    //high 32 bits
+	    ebx = (timeSpent >> 32) & 0xFFFFFFFF;
+            //low 32 bits
+            ecx = timeSpent & 0xFFFFFFFF;
+
+	    // return exit time in ebx (high 32 bits), ecx(low 32 bits) 
+	    }
+
+	    }
+         }
+	    
+        } else {		
 	  kvm_cpuid(vcpu, &eax, &ebx, &ecx, &edx, true);
 	
 	}
@@ -1081,6 +1130,9 @@ int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
 	if(eax == 0x4FFFFFFF) {
           printk("CPUID(0x4FFFFFFF), exits = %d", atomic_read(&totalNumOfExits));
 	}
+/*	if(eax == 0x4FFFFFFD) {
+        printk("CPUID(0x4FFFFFFD), exits = %d", atomic_read(&exitCountForExitReason[ecx]);
+	}*/
 	return kvm_skip_emulated_instruction(vcpu);
 }
 EXPORT_SYMBOL_GPL(kvm_emulate_cpuid);
